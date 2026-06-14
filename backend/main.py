@@ -16,6 +16,12 @@ from router_agent import RouterAgent
 report_generator = ReportGenerator()
 from fastapi import UploadFile, File, HTTPException
 from s3_service import S3Service
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from rds_database import engine, get_rds_db
+from rds_models import Base, UploadedFile
+
 from database import (
     init_db,
     save_chat,
@@ -27,6 +33,7 @@ from database import (
 
 app = FastAPI(title="AI Business Copilot API")
 init_db()
+Base.metadata.create_all(bind=engine)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHARTS_DIR = BASE_DIR / "data" / "charts"
@@ -358,17 +365,58 @@ def reports():
     }
 
 
-
 @app.post("/files/upload")
-async def upload_file_to_s3(file: UploadFile = File(...)):
+async def upload_file_to_s3(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_rds_db),
+):
     try:
         s3_service = S3Service()
         result = s3_service.upload_file(file)
 
+        uploaded_file = UploadedFile(
+            original_filename=result["original_filename"],
+            s3_key=result["s3_key"],
+            bucket=result["bucket"],
+            content_type=result["content_type"],
+        )
+
+        db.add(uploaded_file)
+        db.commit()
+        db.refresh(uploaded_file)
+
         return {
-            "message": "File uploaded successfully",
-            "data": result,
+            "message": "File uploaded to S3 and metadata saved to RDS successfully",
+            "data": {
+                "id": uploaded_file.id,
+                "original_filename": uploaded_file.original_filename,
+                "s3_key": uploaded_file.s3_key,
+                "bucket": uploaded_file.bucket,
+                "content_type": uploaded_file.content_type,
+                "uploaded_at": uploaded_file.uploaded_at,
+            },
         }
 
     except Exception as error:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(error))
+    
+
+@app.get("/files")
+def list_uploaded_files(db: Session = Depends(get_rds_db)):
+    files = db.query(UploadedFile).order_by(UploadedFile.uploaded_at.desc()).all()
+
+    return {
+        "count": len(files),
+        "data": [
+            {
+                "id": item.id,
+                "original_filename": item.original_filename,
+                "s3_key": item.s3_key,
+                "bucket": item.bucket,
+                "content_type": item.content_type,
+                "uploaded_at": item.uploaded_at,
+            }
+            for item in files
+        ],
+    }   
