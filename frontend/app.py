@@ -530,12 +530,14 @@ if uploaded_file is not None:
 
             if response.status_code == 200:
                 result = response.json()
-
-                st.success("File uploaded to S3 successfully.")
+                st.success("File uploaded to S3 and metadata saved to RDS successfully.")
+                st.write("Database ID:", result["data"].get("id"))
                 st.write("Original filename:", result["data"]["original_filename"])
                 st.write("S3 bucket:", result["data"]["bucket"])
                 st.write("S3 key:", result["data"]["s3_key"])
                 st.write("Content type:", result["data"]["content_type"])
+                st.write("Uploaded at:", result["data"].get("uploaded_at"))
+
             else:
                 st.error("Upload failed.")
                 st.write(response.text)
