@@ -2,6 +2,9 @@ import streamlit as st
 import requests
 import plotly.express as px
 import pandas as pd
+import os
+import requests
+import streamlit as st
 # API_URL = "http://127.0.0.1:8000"
 import os
 
@@ -498,3 +501,44 @@ with tab7:
 
     else:
         st.error("Could not load reports.")
+
+
+
+st.subheader("Upload File to AWS S3")
+
+uploaded_file = st.file_uploader(
+    "Choose a file to upload to S3",
+    type=["pdf", "txt", "csv", "xlsx", "docx"],
+    key="s3_file_uploader"
+)
+
+if uploaded_file is not None:
+    if st.button("Upload to S3"):
+        try:
+            api_url = os.getenv("API_URL", "http://localhost:8000")
+            upload_endpoint = f"{api_url}/files/upload"
+
+            files = {
+                "file": (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                    uploaded_file.type
+                )
+            }
+
+            response = requests.post(upload_endpoint, files=files, timeout=60)
+
+            if response.status_code == 200:
+                result = response.json()
+
+                st.success("File uploaded to S3 successfully.")
+                st.write("Original filename:", result["data"]["original_filename"])
+                st.write("S3 bucket:", result["data"]["bucket"])
+                st.write("S3 key:", result["data"]["s3_key"])
+                st.write("Content type:", result["data"]["content_type"])
+            else:
+                st.error("Upload failed.")
+                st.write(response.text)
+
+        except Exception as e:
+            st.error(f"Upload error: {e}")
