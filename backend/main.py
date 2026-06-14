@@ -14,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from report_generator import ReportGenerator
 from router_agent import RouterAgent
 report_generator = ReportGenerator()
+from fastapi import UploadFile, File, HTTPException
+from s3_service import S3Service
 from database import (
     init_db,
     save_chat,
@@ -354,3 +356,19 @@ def reports():
     return {
         "reports": get_reports()
     }
+
+
+
+@app.post("/files/upload")
+async def upload_file_to_s3(file: UploadFile = File(...)):
+    try:
+        s3_service = S3Service()
+        result = s3_service.upload_file(file)
+
+        return {
+            "message": "File uploaded successfully",
+            "data": result,
+        }
+
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))

@@ -16,3 +16,6 @@ pandas
 openpyxl
 prophet
 langgraph
+boto3
+python-multipart
+python-dotenv

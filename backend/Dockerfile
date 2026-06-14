@@ -10,8 +10,7 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend ./backend
-COPY data ./data
-
+RUN mkdir -p /app/data/uploads /app/data/chroma /app/data/charts /app/data/reports
 WORKDIR /app/backend
 
 EXPOSE 8000
