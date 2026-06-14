@@ -544,3 +544,28 @@ if uploaded_file is not None:
 
         except Exception as e:
             st.error(f"Upload error: {e}")
+
+
+st.subheader("Uploaded Files History")
+
+if st.button("Load Uploaded Files"):
+    try:
+        api_url = os.getenv("API_URL", "http://localhost:8000")
+        files_endpoint = f"{api_url}/files"
+
+        response = requests.get(files_endpoint, timeout=30)
+
+        if response.status_code == 200:
+            result = response.json()
+            files_data = result.get("data", [])
+
+            if files_data:
+                st.dataframe(files_data, use_container_width=True)
+            else:
+                st.info("No uploaded files found.")
+        else:
+            st.error("Failed to load uploaded files.")
+            st.write(response.text)
+
+    except Exception as e:
+        st.error(f"Error loading uploaded files: {e}")
