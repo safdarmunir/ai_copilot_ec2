@@ -1,16 +1,27 @@
-venv/
-.venv/
+# Python
 __pycache__/
 *.pyc
+venv/
+.venv/
+
+# Environment / secrets
 .env
+.env.*
+!.env.example
+*.pem
+
+# Local app data
 data/uploads/
 data/chroma/
 data/charts/
 data/reports/
 data/copilot.db
+
 backend/data/uploads/
 backend/data/chroma/
 backend/data/charts/
 backend/data/reports/
 backend/data/copilot.db
+
+# System files
 .DS_Store
